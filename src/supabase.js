@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Replace with your Supabase Project URL and Publishable key, or set them in .env
 const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_PROJECT_URL'
+  import.meta.env.VITE_SUPABASE_URL || 'https://pzagcymbtgptjeubiryx.supabase.co'
 const supabasePublishableKey =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'YOUR_SUPABASE_PUBLISHABLE_KEY'
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  'sb_publishable_WhvMLfn_zF-fLBXJ7ch6ZQ_p-f9EN9F'
 
 export const isSupabaseConfigured =
   Boolean(supabaseUrl) &&

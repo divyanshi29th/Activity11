@@ -2,7 +2,7 @@
 -- Run this SQL in your Supabase Dashboard -> SQL Editor
 
 -- 1. Create matches table
-CREATE TABLE IF NOT EXISTS matches (
+CREATE TABLE IF NOT EXISTS public.matches (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   match_number TEXT NOT NULL,
   teams TEXT NOT NULL,
@@ -15,10 +15,10 @@ CREATE TABLE IF NOT EXISTS matches (
 );
 
 -- 2. Create bookings table
-CREATE TABLE IF NOT EXISTS bookings (
+CREATE TABLE IF NOT EXISTS public.bookings (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   booking_code TEXT NOT NULL,
-  match_id BIGINT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  match_id BIGINT NOT NULL REFERENCES public.matches(id) ON DELETE CASCADE,
   match_name TEXT NOT NULL,
   customer_name TEXT NOT NULL,
   email TEXT NOT NULL,
@@ -30,29 +30,39 @@ CREATE TABLE IF NOT EXISTS bookings (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 3. Enable Row Level Security and allow public read/write for demo app
-ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
-ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_bookings_match_id ON public.bookings(match_id);
 
-DROP POLICY IF EXISTS "Allow public read on matches" ON matches;
+-- 3. Grant Data API table privileges and enable Row Level Security
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT, UPDATE ON public.matches TO anon, authenticated;
+GRANT SELECT, INSERT ON public.bookings TO anon, authenticated;
+
+ALTER TABLE public.matches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read on matches" ON public.matches;
 CREATE POLICY "Allow public read on matches"
-  ON matches FOR SELECT
+  ON public.matches FOR SELECT
+  TO anon, authenticated
   USING (true);
 
-DROP POLICY IF EXISTS "Allow public update on matches" ON matches;
+DROP POLICY IF EXISTS "Allow public update on matches" ON public.matches;
 CREATE POLICY "Allow public update on matches"
-  ON matches FOR UPDATE
+  ON public.matches FOR UPDATE
+  TO anon, authenticated
   USING (true)
   WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Allow public read on bookings" ON bookings;
+DROP POLICY IF EXISTS "Allow public read on bookings" ON public.bookings;
 CREATE POLICY "Allow public read on bookings"
-  ON bookings FOR SELECT
+  ON public.bookings FOR SELECT
+  TO anon, authenticated
   USING (true);
 
-DROP POLICY IF EXISTS "Allow public insert on bookings" ON bookings;
+DROP POLICY IF EXISTS "Allow public insert on bookings" ON public.bookings;
 CREATE POLICY "Allow public insert on bookings"
-  ON bookings FOR INSERT
+  ON public.bookings FOR INSERT
+  TO anon, authenticated
   WITH CHECK (true);
 
 -- 4. Enable Realtime broadcasts for matches and bookings
@@ -63,7 +73,7 @@ BEGIN
     FROM pg_publication_tables
     WHERE pubname = 'supabase_realtime' AND tablename = 'matches'
   ) THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE matches;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.matches;
   END IF;
 
   IF NOT EXISTS (
@@ -71,12 +81,12 @@ BEGIN
     FROM pg_publication_tables
     WHERE pubname = 'supabase_realtime' AND tablename = 'bookings'
   ) THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE bookings;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.bookings;
   END IF;
 END $$;
 
 -- 5. Insert sample IPL 2026 matches (only if table is empty)
-INSERT INTO matches (match_number, teams, team_codes, date, venue, prices, available_seats)
+INSERT INTO public.matches (match_number, teams, team_codes, date, venue, prices, available_seats)
 SELECT * FROM (
   VALUES
     (
@@ -107,4 +117,4 @@ SELECT * FROM (
       150
     )
 ) AS seed(match_number, teams, team_codes, date, venue, prices, available_seats)
-WHERE NOT EXISTS (SELECT 1 FROM matches);
+WHERE NOT EXISTS (SELECT 1 FROM public.matches);
