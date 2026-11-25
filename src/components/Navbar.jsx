@@ -1,15 +1,34 @@
 import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/useAuth'
 
-export default function Navbar() {
+export default function Navbar({ onShowToast }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { isAuthenticated, claims, user, signOut } = useAuth()
+  const navigate = useNavigate()
+
+  const userEmail = user?.email || claims?.email || ''
 
   const handleLinkClick = () => {
     setIsMenuOpen(false)
   }
 
+  const handleSignOut = async () => {
+    setIsMenuOpen(false)
+    const { error } = await signOut()
+    if (error) {
+      onShowToast?.(`Sign out failed: ${error.message}`)
+      return
+    }
+    onShowToast?.('Signed out successfully.')
+    navigate('/')
+  }
+
   return (
     <header className="navbar">
-      <div className="brand">IPL Ticket Booking 2026</div>
+      <NavLink to="/" className="brand" onClick={handleLinkClick}>
+        IPL Ticket Booking 2026
+      </NavLink>
       <button
         type="button"
         className="menu-toggle"
@@ -20,21 +39,28 @@ export default function Navbar() {
         &#9776;
       </button>
       <nav className={`nav-links ${isMenuOpen ? 'open' : ''}`}>
-        <a href="#matches" onClick={handleLinkClick}>
+        <NavLink to="/" end onClick={handleLinkClick}>
           Matches
-        </a>
-        <a href="#booking" onClick={handleLinkClick}>
+        </NavLink>
+        <NavLink to="/book" onClick={handleLinkClick}>
           Book Ticket
-        </a>
-        <a href="#booking-summary" onClick={handleLinkClick}>
-          Summary
-        </a>
-        <a href="#mybookings" onClick={handleLinkClick}>
+        </NavLink>
+        <NavLink to="/my-bookings" onClick={handleLinkClick}>
           My Bookings
-        </a>
-        <a href="#guidelines" onClick={handleLinkClick}>
-          Guidelines
-        </a>
+        </NavLink>
+
+        {isAuthenticated ? (
+          <div className="nav-auth-group">
+            {userEmail && <span className="nav-user-email">{userEmail}</span>}
+            <button type="button" className="btn-small nav-auth-btn" onClick={handleSignOut}>
+              Sign Out
+            </button>
+          </div>
+        ) : (
+          <NavLink to="/login" className="nav-login-link" onClick={handleLinkClick}>
+            Sign In
+          </NavLink>
+        )}
       </nav>
     </header>
   )

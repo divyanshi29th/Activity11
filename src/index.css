@@ -59,6 +59,7 @@ body {
   font-size: 1.35rem;
   font-weight: bold;
   color: var(--accent-color);
+  text-decoration: none;
 }
 
 .menu-toggle {
@@ -88,9 +89,41 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.nav-links a:hover {
+.nav-links a:hover,
+.nav-links a.active {
   background-color: var(--accent-color);
   color: var(--primary-color);
+}
+
+.nav-auth-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 6px;
+}
+
+.nav-user-email {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-auth-btn {
+  background-color: transparent;
+  color: var(--accent-color);
+  border: 1px solid var(--accent-color);
+}
+
+.nav-auth-btn:hover {
+  background-color: var(--accent-color);
+  color: var(--primary-color);
+}
+
+.nav-login-link {
+  border: 1px solid var(--accent-color);
 }
 
 /* Hero Banner */
@@ -467,6 +500,7 @@ label {
 
 input[type='text'],
 input[type='email'],
+input[type='password'],
 input[type='tel'],
 input[type='number'],
 select {
@@ -518,6 +552,50 @@ select:focus {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 18px;
+}
+
+/* Auth & Protected Route Pages */
+.auth-card {
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.auth-subtitle {
+  color: #475569;
+  margin-bottom: 18px;
+}
+
+.auth-alert {
+  padding: 12px 14px;
+  border-radius: 6px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.auth-alert-error {
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.auth-alert-info {
+  background-color: #dcfce7;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.auth-loading-card {
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
 }
 
 /* Toast Notification */

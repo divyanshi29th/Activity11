@@ -1,12 +1,14 @@
-# IPL Ticket Booking 2026 - Supabase Edition (Activity 11)
+# IPL Ticket Booking 2026 - Supabase Auth & Database (Activity 11)
 
-React + Vite application connected to a live PostgreSQL database via Supabase with real-time seat availability updates.
+React + Vite application connected to a live PostgreSQL database via Supabase with **Supabase Auth**, **React Router Protected Routes**, user-scoped **Row Level Security (RLS)**, and real-time seat availability updates.
 
 ## Features
 
-- **Live Match Schedule**: Fetches matches from Supabase (`matches` table) using `.from('matches').select('*')` inside `useEffect`.
-- **Database Booking**: Inserts new bookings into `bookings` (`.insert()`) and decrements `available_seats` on `matches` (`.update().eq()`).
-- **Realtime Sync**: Subscribes to `postgres_changes` on both `matches` and `bookings` so the UI auto-updates whenever database changes occur.
+- **Public Match Schedule (`/`)**: Fetches live matches from Supabase (`matches` table) using `.from('matches').select('*')` inside `useEffect`, with team filtering, grid/list toggle, and live Realtime updates.
+- **Supabase Auth (`/login`)**: Email & password sign-in and account creation (`signInWithPassword` / `signUp`), verified via `supabase.auth.getClaims()` and `onAuthStateChange`.
+- **Protected Routes (`/book`, `/my-bookings`)**: Wrapped in `<ProtectedRoute>` so unauthenticated visitors are redirected to `/login` and returned to their intended page after signing in.
+- **Database Booking & User-Scoped RLS**: Inserts new bookings tagged with `user_id` into `bookings` (`.insert()`) and decrements `available_seats` on `matches` (`.update().eq()`). RLS policies ensure authenticated users can only read and insert their own bookings.
+- **Realtime Sync**: Subscribes to `postgres_changes` on `matches` and user-scoped `bookings` so the UI auto-updates whenever database changes occur.
 
 ## Setup
 

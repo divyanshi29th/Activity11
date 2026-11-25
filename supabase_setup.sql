@@ -1,7 +1,7 @@
--- IPL Ticket Booking 2026 - Supabase PostgreSQL Setup
+-- IPL Ticket Booking 2026 - Supabase PostgreSQL + Auth RLS Setup
 -- Run this SQL in your Supabase Dashboard -> SQL Editor
 
--- 1. Create matches table
+-- 1. Create matches table (publicly readable, seat updates by authenticated users)
 CREATE TABLE IF NOT EXISTS public.matches (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   match_number TEXT NOT NULL,
@@ -14,9 +14,10 @@ CREATE TABLE IF NOT EXISTS public.matches (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 2. Create bookings table
+-- 2. Create bookings table scoped to authenticated users via user_id
 CREATE TABLE IF NOT EXISTS public.bookings (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
   booking_code TEXT NOT NULL,
   match_id BIGINT NOT NULL REFERENCES public.matches(id) ON DELETE CASCADE,
   match_name TEXT NOT NULL,
@@ -30,16 +31,27 @@ CREATE TABLE IF NOT EXISTS public.bookings (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_bookings_match_id ON public.bookings(match_id);
+-- If upgrading an existing bookings table from before Auth was added:
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS user_id UUID DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE;
 
--- 3. Grant Data API table privileges and enable Row Level Security
+CREATE INDEX IF NOT EXISTS idx_bookings_match_id ON public.bookings(match_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON public.bookings(user_id);
+
+-- 3. Grant least-privilege Data API table permissions and enable RLS
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
-GRANT SELECT, UPDATE ON public.matches TO anon, authenticated;
-GRANT SELECT, INSERT ON public.bookings TO anon, authenticated;
+
+REVOKE ALL ON public.matches FROM anon, authenticated;
+GRANT SELECT ON public.matches TO anon, authenticated;
+GRANT UPDATE (available_seats) ON public.matches TO authenticated;
+
+REVOKE ALL ON public.bookings FROM anon, authenticated;
+GRANT SELECT, INSERT ON public.bookings TO authenticated;
 
 ALTER TABLE public.matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 
+-- Matches policies
 DROP POLICY IF EXISTS "Allow public read on matches" ON public.matches;
 CREATE POLICY "Allow public read on matches"
   ON public.matches FOR SELECT
@@ -47,23 +59,27 @@ CREATE POLICY "Allow public read on matches"
   USING (true);
 
 DROP POLICY IF EXISTS "Allow public update on matches" ON public.matches;
-CREATE POLICY "Allow public update on matches"
+DROP POLICY IF EXISTS "Allow authenticated seat updates on matches" ON public.matches;
+CREATE POLICY "Allow authenticated seat updates on matches"
   ON public.matches FOR UPDATE
-  TO anon, authenticated
+  TO authenticated
   USING (true)
-  WITH CHECK (true);
+  WITH CHECK (available_seats >= 0);
 
+-- Bookings policies (strictly scoped to the signed-in owner)
 DROP POLICY IF EXISTS "Allow public read on bookings" ON public.bookings;
-CREATE POLICY "Allow public read on bookings"
+DROP POLICY IF EXISTS "Users can view their own bookings" ON public.bookings;
+CREATE POLICY "Users can view their own bookings"
   ON public.bookings FOR SELECT
-  TO anon, authenticated
-  USING (true);
+  TO authenticated
+  USING ((select auth.uid()) = user_id);
 
 DROP POLICY IF EXISTS "Allow public insert on bookings" ON public.bookings;
-CREATE POLICY "Allow public insert on bookings"
+DROP POLICY IF EXISTS "Users can create their own bookings" ON public.bookings;
+CREATE POLICY "Users can create their own bookings"
   ON public.bookings FOR INSERT
-  TO anon, authenticated
-  WITH CHECK (true);
+  TO authenticated
+  WITH CHECK ((select auth.uid()) = user_id);
 
 -- 4. Enable Realtime broadcasts for matches and bookings
 DO $$

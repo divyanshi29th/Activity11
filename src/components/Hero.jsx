@@ -1,15 +1,17 @@
+import { Link } from 'react-router-dom'
+
 export default function Hero({ title, subtitle }) {
   return (
     <section className="hero">
       <h1>{title}</h1>
       <p>{subtitle}</p>
       <div className="hero-actions">
-        <a href="#matches" className="btn">
+        <Link to="/" className="btn">
           View Schedule
-        </a>
-        <a href="#booking" className="btn btn-outline">
+        </Link>
+        <Link to="/book" className="btn btn-outline">
           Book Ticket
-        </a>
+        </Link>
       </div>
     </section>
   )
